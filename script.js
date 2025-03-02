@@ -29,6 +29,7 @@ let wrongGuesses = 0
 const wordDisplay = document.getElementById('word-display');
 const keyboard = document.getElementById('keyboard');
 const messageElement = document.getElementById('message');
+const messageElementModal = document.getElementById('win-modal');
 const newGameBtn = document.getElementById('new-game-btn');
 const triesLeft  = document.getElementById('tries-left');
 const scoreElement = document.getElementById('score');
@@ -74,6 +75,9 @@ function gamePlay(){
     // create keyboard
     createKeyboard();
 
+    //handle win function
+    handleWin();
+
     // create function reset hangman 
     resetHangman()
 }
@@ -106,6 +110,7 @@ function resetHangman(){
             part.style.display = 'none'
         }
     })
+    messageElementModal.classList.add("hidden")
 }
 
 function handleGuess(letter){
@@ -123,6 +128,11 @@ function handleGuess(letter){
     if (currentWord.includes(letter)){
         key.classList.add('correct');
         updateWordDisplay(letter);
+
+        // call handleWin function
+        if (isWordComplete()) {
+            handleWin();
+        }
         
     }else{
         key.classList.add('wrong');
@@ -155,9 +165,17 @@ function isWordComplete(){
     }return true;
 }
 
-// function handleWin() {
+function handleWin() {
+    if(isWordComplete()){
+        messageElement.textContent = "You win";
+        messageElement.classList.add('success');
+        messageElementModal.classList.remove("hidden");
+        console.log(isWordComplete());
+    }
+}
 
-// }
+
+
 // event listeners
 categorySelect.addEventListener('change', gamePlay)
 newGameBtn.addEventListener('click', gamePlay)
