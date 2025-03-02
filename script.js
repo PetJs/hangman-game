@@ -23,6 +23,8 @@ let guessedLetters = []
 let score = 0
 let maxTries = 8
 let wrongGuesses = 0
+let timer = null
+let timeLeft = 60 // Timer set to 60 seconds
 
 // state variables
 // DOM elements
@@ -36,7 +38,7 @@ const scoreElement = document.getElementById('score');
 const hintElement = document.getElementById('hint');
 const categorySelect = document.getElementById('category-select');
 const hangmanParts = document.querySelectorAll('.hangman-part');
-
+const timerElement = document.getElementById('timer');
 
 //gameplay:
 // 1. there is a current word (randomly chosen by our program from the dataset)
@@ -53,16 +55,17 @@ function gamePlay(){
     // clean out the  the state
     guessedLetters = []
     wrongGuesses = 0
+    timeLeft = 60 // Reset timer
 
     // reset the visual part if the state
     triesLeft.textContent = maxTries;
-    messageElement.textContent = ' ';
+    messageElement.textContent = '';
+    messageElement.className = ''; // Reset message class
 
     // get current category
     const category = categorySelect.value;
     hintElement.textContent = categories[category].hint;
    
-
     // generate the random word from the chosen category
     const words = categories[category].words;
     currentWord = words[Math.floor(Math.random() * words.length)];
@@ -75,12 +78,13 @@ function gamePlay(){
     // create keyboard
     createKeyboard();
 
-    //handle win function
-    handleWin();
-
     // create function reset hangman 
-    resetHangman()
+    resetHangman();
+
+    // Start/reset timer
+    startTimer();
 }
+
 function createWordDisplay(){
     wordDisplay.innerHTML = '';
     for (let i = 0; i < currentWord.length; i++){
@@ -90,6 +94,7 @@ function createWordDisplay(){
         wordDisplay.appendChild(letterBox)
     }
 }
+
 function createKeyboard(){
     keyboard.innerHTML = '';
     const letters = 'abcdefghijklmnopqrstuvwxyz';
@@ -136,13 +141,18 @@ function handleGuess(letter){
         
     }else{
         key.classList.add('wrong');
-        wrongGuesses ++
+        wrongGuesses++;
         triesLeft.textContent = maxTries - wrongGuesses;
         updateHangman();
+        
+        // Check if player lost
+        if (wrongGuesses >= maxTries) {
+            handleLose();
+        }
     }
 }
 
-function updateWordDisplay (letter){
+function updateWordDisplay(letter){
     const letterBoxes = wordDisplay.children;
     for (let i = 0; i < letterBoxes.length; i++){
         if(letterBoxes[i].dataset.letter === letter){
@@ -150,34 +160,83 @@ function updateWordDisplay (letter){
         }
     }
 }
+
 function updateHangman(){
     if(wrongGuesses + 1 < hangmanParts.length){
         hangmanParts[wrongGuesses + 1].style.display ='block';
     }
 }
+
 function isWordComplete(){
     const letterBoxes = wordDisplay.children;
     for(let i = 0; i < letterBoxes.length; i++){
-        const letter  = letterBoxes[i].dataset.letter;
+        const letter = letterBoxes[i].dataset.letter;
         if(!guessedLetters.includes(letter)){
             return false;
         }
-    }return true;
+    }
+    return true;
 }
 
 function handleWin() {
     if(isWordComplete()){
-        messageElement.textContent = "You win";
-        messageElement.classList.add('success');
+        stopTimer();
+        score++;
+        scoreElement.textContent = score;
+        messageElement.textContent = "You win! The word was: " + currentWord;
+        messageElement.className = 'message success';
         messageElementModal.classList.remove("hidden");
-        console.log(isWordComplete());
     }
 }
 
+function handleLose() {
+    stopTimer();
+    messageElement.textContent = "You lose! The word was: " + currentWord;
+    messageElement.className = 'message danger';
+    messageElementModal.classList.remove("hidden");
+    
+    // Reveal all unguessed letters
+    const letterBoxes = wordDisplay.children;
+    for(let i = 0; i < letterBoxes.length; i++){
+        const letter = letterBoxes[i].dataset.letter;
+        letterBoxes[i].textContent = letter;
+    }
+}
 
+function startTimer() {
+    // Clear any existing timer
+    if (timer) {
+        clearInterval(timer);
+    }
+    
+    timeLeft = 180;
+    if (timerElement) {
+        timerElement.textContent = timeLeft;
+    }
+    
+    timer = setInterval(() => {
+        timeLeft--;
+        if (timerElement) {
+            timerElement.textContent = timeLeft;
+        }
+        
+        if (timeLeft <= 0) {
+            handleLose();
+            clearInterval(timer);
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    if (timer) {
+        clearInterval(timer);
+        timer = null;
+    }
+}
 
 // event listeners
-categorySelect.addEventListener('change', gamePlay)
-newGameBtn.addEventListener('click', gamePlay)
-// call function
-gamePlay()
+categorySelect.addEventListener('change', gamePlay);
+newGameBtn.addEventListener('click', gamePlay);
+
+// call function to start game
+gamePlay();
